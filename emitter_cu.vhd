@@ -32,20 +32,22 @@ use IEEE.STD_LOGIC_1164.ALL;
 entity emitter_cu is
 port(
 	dataIn: in std_logic_vector(0 to 15);
-	clk,reset: in std_logic;
-	sync,AdrInc,Waste: out std_logic
+	sync,AdrInc,Waste,stdCnt: out std_logic;
+	clk,reset: in std_logic
 );
 end emitter_cu;
 
 architecture Behavioral of emitter_cu is
 type state is (s0,s1,s2,s3);
+signal cnt: integer;
 
 begin
 
-process(clk,reset,dataIn) 
+stdCnt <= std_logic_vector(to_unsigned((cnt),5));
+
+process(clk,reset,dataIn,cnt) 
 variable s,n_s: state:=state0;
 variable conf: std_logic_vector(0 to 15);
-variable cnt: integer:=0;
 variable slotChk: integer :=0;
 begin
 
@@ -60,14 +62,14 @@ if(rising_edge(clk)) then
 
 --Configuration
   if(s = s0) then
-    conf <= dataIn;
+    conf := dataIn;
   end if;
 
 --Counter
   if(((s = s2 )and cnt < 15) or ((s=s3) and cnt <19)) then
-    cnt := cnt +1;
+    cnt <= cnt +1;
   else
-    cnt := 0;
+    cnt <= 0;
   end if;
 
 --Slot validity Check, necessary for address incrementation.
