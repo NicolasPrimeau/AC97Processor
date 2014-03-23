@@ -19,6 +19,7 @@
 ----------------------------------------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use ieee.numeric_std.all;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -32,7 +33,8 @@ use IEEE.STD_LOGIC_1164.ALL;
 entity emitter_cu is
 port(
 	dataIn: in std_logic_vector(0 to 15);
-	sync,AdrInc,Waste,stdCnt: out std_logic;
+	sync,AdrInc,Waste: out std_logic;
+	stdCnt: out std_logic_vector(4 downto 0);
 	clk,reset: in std_logic
 );
 end emitter_cu;
@@ -46,7 +48,7 @@ begin
 stdCnt <= std_logic_vector(to_unsigned((cnt),5));
 
 process(clk,reset,dataIn,cnt) 
-variable s,n_s: state:=state0;
+variable s,n_s: state:=s0;
 variable conf: std_logic_vector(0 to 15);
 variable slotChk: integer :=0;
 begin
@@ -84,16 +86,16 @@ end if;
 
 case s is
   when s0 => if(conf(0) = '1') then  -- Valid frame
-               n_s := s_1;
+               n_s := s1;
 			    else
 				   AdrInc <= '1'; -- Not a valid frame, increment address, find a valid tag
-				   n_s := s_0;
+				   n_s := s0;
 			    end if;
 				 
 				 --Outputs derived from s0
 				 Sync <= '0';
 				 
-  when s1 => n_s := s_2; --Pre frame Sync signal
+  when s1 => n_s := s2; --Pre frame Sync signal
   
              --Derived outputs
              Sync <= '1';

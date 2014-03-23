@@ -1,0 +1,9 @@
+# PlanAhead Generated physical constraints 
+
+NET "clk1" LOC = L15;
+NET "clk2" LOC = L13;
+NET "lineIn" LOC = T18;
+NET "lineOut" LOC = N16;
+NET "rst" LOC = P4;
+NET "sync" LOC = U17;
+NET "hardReset" LOC = T17;

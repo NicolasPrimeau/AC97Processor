@@ -36,23 +36,24 @@ signal stdCnt: std_logic_vector(4 downto 0);
 component emitter_cu is
 port(
 	dataIn: in std_logic_vector(0 to 15);
-	sync,AdrInc,Waste,stdCnt: out std_logic;
+	sync,AdrInc,Waste: out std_logic;
+	stdCnt: out std_logic_vector(4 downto 0);
 	clk,reset: in std_logic
 );
 end component;
 
-entity emitter_datapath is
+component emitter_datapath is
 port(
 	dataIn: in std_logic_vector(19 downto 0);
 	waste: in std_logic;
 	bitCnt: in std_logic_vector(4 downto 0);
-	sendBit:out std_logic;
+	sendBit:out std_logic
 );
-end emitter_datapath;
+end component;
 
 begin
 
-cu: emitter_cu port map(dataIn(15 downto 0),sync,AdrInc,Waste,stdCnt);
+cu: emitter_cu port map(dataIn(15 downto 0),sync,AdrInc,Waste,stdCnt,clk,rst);
 data: emitter_datapath port map(dataIn,waste,stdCnt,lineOut);
 
 emitterAddressRegister: process(clk,rst,AdrInc) 
@@ -62,8 +63,12 @@ begin
 if(rising_edge(clk)) then
   if(rst= '1') then
     address := 0;
-  elsif (AdrInc) then
-    address := addres +1;
+  elsif (AdrInc = '1') then
+    if(address < 4) then -- Testing purposes only
+      address := address +1;
+    elsif(address = 4) then -- Alternating 
+	   address :=3;
+    end if;
   end if;
 end if;
   adr <= address;
