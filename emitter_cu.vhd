@@ -32,7 +32,7 @@ use ieee.numeric_std.all;
 
 entity emitter_cu is
 port(
-	dataIn: in std_logic_vector(0 to 15);
+	dataIn: in std_logic_vector(15 downto 0);
 	sync,AdrInc,Waste: out std_logic;
 	stdCnt: out std_logic_vector(4 downto 0);
 	clk,reset: in std_logic
@@ -41,30 +41,27 @@ end emitter_cu;
 
 architecture Behavioral of emitter_cu is
 type state is (s0,s1,s2,s3);
-signal cnt: integer;
+signal cnt,slotChk: natural:=0;
+signal s,n_s: state:=s0;
+signal conf: std_logic_vector(15 downto 0);
 
 begin
 
 stdCnt <= std_logic_vector(to_unsigned((cnt),5));
 
-process(clk,reset,dataIn,cnt) 
-variable s,n_s: state:=s0;
-variable conf: std_logic_vector(0 to 15);
-variable slotChk: integer :=0;
+process(s,n_s,clk,reset,dataIn,cnt) 
 begin
 
-if(rising_edge(clk)) then
-
 --State selection
-  if(reset = '0') then
-    s := n_s;
-  else
-    s:= s0;
-  end if;
+  if(reset = '1') then
+    s<= s0;
+    cnt<= 0;
+  elsif(rising_edge(clk)) then
+    s <= n_s;
 
 --Configuration
   if(s = s0) then
-    conf := dataIn;
+    conf <= dataIn;
   end if;
 
 --Counter
@@ -76,68 +73,68 @@ if(rising_edge(clk)) then
 
 --Slot validity Check, necessary for address incrementation.
   if(s=s0 or s=s1) then
-    slotChk := 1;
-  elsif((s = s3 and cnt = 19) or (s=s2 and cnt = 15)) then
-    slotChk := slotChk +1;
+    slotChk <= 1;
+  elsif(s = s3 and cnt = 19) then
+    slotChk <= slotChk +1;
   end if;
   
 end if;
 
 
 case s is
-  when s0 => if(conf(0) = '1') then  -- Valid frame
-               n_s := s1;
-			    else
-				   AdrInc <= '1'; -- Not a valid frame, increment address, find a valid tag
-				   n_s := s0;
-			    end if;
+  when s0 => if(conf(15) = '1') then  -- Valid frame
+               n_s <= s1;
+               AdrInc <= '0';
+			       elsif(conf(15) = '0') then
+				       AdrInc <= '1'; -- Not a valid frame, increment address, find a valid tag
+				       n_s <= s0;
+				     else
+				       AdrInc <= '0';
+			       end if;
+			       Waste <= '1';
 				 
 				 --Outputs derived from s0
 				 Sync <= '0';
 				 
-  when s1 => n_s := s2; --Pre frame Sync signal
-  
+  when s1 => n_s <= s2; --Pre frame Sync signal
+             AdrInc <= '0';
              --Derived outputs
              Sync <= '1';
-				 
+				     Waste <= '1';
   when s2 => if(cnt = 15) then -- If cnt is 15, prepare for next Slot at next rising edge
-               n_s := s3; --Tag is the only 16 bit slot, syncing is over
-					AdrInc <= '1';
-			    end if;
-				 Sync <= '1';  -- Keep Sync up
-				 
-  when s3 => if(slotChk = 12 and cnt = 19) then -- Maximum of slot for this board, for stereo outputs
-                     n_s := s0;
-				 elsif(((conf AND "0111100000000000") = "0111000000000000") and slotChk = 4) then -- not very elegant, I know
-				         n_s := s0;
-				 elsif(((conf AND "0111100000000000") = "0110000000000000") and slotChk = 3) then -- But it's simple, easy to understand
-				         n_s := s0;
-				 elsif(((conf AND "0111100000000000") = "0100000000000000") and slotChk = 2) then -- Basically, if current slot is not valid, and none are valid after
-                     n_s := s0;
-				 elsif(((conf AND "0111100000000000") = "0000000000000000") and slotChk = 1) then -- Go back to State 0
-				         n_s := s0;
+               n_s <= s3; --Tag is the only 16 bit slot, syncing is over
+					     AdrInc <= '1';
+					     Sync <= '0';
+					   elsif(cnt = 14) then
+					     Sync <= '0';
+					   else
+					     Sync <= '1';  -- Keep Sync up
+			       end if;
+				 Waste <= '0';
+  when s3 => 
+    
+        if(slotChk = 12 and cnt = 19) then -- Maximum of slot for this board, for stereo outputs
+                 n_s <= s0;
 				 end if;
 				 
 				 --Derived outputs
 				 Sync <= '0';
 				 
-				 if(conf(slotChk) = '0' or slotChk > 4) then -- If the current slot is invalid, waste it
+				 if(conf(15-slotChk) = '0' or slotChk > 4) then -- If the current slot is invalid, waste it
 				   Waste <= '1';
 			    else 
 				   Waste <= '0';
 			    end if;
 				 
-				 if(slotChk <5 and cnt = 19) then -- We never increase address when we're processing slots over the max 5
-					 if(conf(slotChk+1) = '1') then -- End of slot, process next valid slot, which is in memmory
+				 if(slotChk <5 and cnt = 19 and conf(15-slotChk-1) = '1' and conf(15-slotChk) = '1') then -- We never increase address when we're processing slots over the max 5
 						 AdrInc <= '1';
-					 end if;
-				 elsif(slotChk = 12 and cnt = 19) then -- Last wasted slot, increase address for next tag
-				    AdrInc<='1';
-             else
-                AdrInc <= '0';				 
+         elsif(slotChk = 12 and cnt = 19) then
+             AdrInc <= '1';		
+        else
+             AdrInc <= '0';
 				 end if;
 								 
-  when others => n_s := s0;
+  when others => n_s <= s0;
 end case;
 
 end process;

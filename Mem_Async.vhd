@@ -34,43 +34,49 @@ use ieee.math_real.all;
 
 entity Mem_Async is
 generic(memSize: integer:=8;
-        numAdr: integer:=512);
+        numAdr: integer:=32);
 port(
 	dataIn: in std_logic_vector(memSize -1 downto 0);
 	dataOut: out std_logic_vector(memSize-1 downto 0);
-	addr: in integer;
+	addr: in natural;
 	rd_wr: in std_logic; -- rd low, wr high
 	reset: in std_logic
 );
 end Mem_Async;
 
 architecture Behavioral of Mem_Async is
-type RAM is array (numAdr-1 downto 0) of std_logic_vector(memSize -1);
+type RAM is array (0 to numAdr-1) of std_logic_vector(memSize -1 downto 0);
 signal memory: RAM;
 begin
 process(reset,dataIn,addr,rd_wr,memory) begin
   if(reset = '1') then
-    memory(0)(255 downto 240) <= "1110000000000000"; -- slot 1 and 2 valid
-	 memory(0)(239 downto 220) <= "00000001000000000000"; -- write to master
-	 memory(0)(219 downto 200) <= "00100001000000000000"; --clear mute, sound medium
+-- write to master
+    memory(0) <= "11100000000000000000";
+    memory(1) <= "00000001000000000000";
+    memory(2) <= "00100001000000000000";
 
-    memory(1)(255 downto 240) <= "1110000000000000"; -- slot 1 and 2 valid
-	 memory(1)(239 downto 220) <= "00000010000000000000"; -- write to headphone
-	 memory(1)(219 downto 200) <= "00100001000000000000"; --clear mute, sound medium
-	 
-    memory(2)(255 downto 240) <= "1110000000000000"; -- slot 1 and 2 valid
-	 memory(2)(239 downto 220) <= "00001100000000000000"; -- write to PCM gain
-	 memory(2)(219 downto 200) <= "00100001000000000000"; --clear mute, sound medium
+-- write to hp
+    memory(3) <= "11100000000000000000";
+    memory(4) <= "00000010000000000000"; 
+    memory(5) <= "00100001000000000000";	                               
 
-    memory(3)(255 downto 240) <= "1001100000000000"; -- slot 3 and 4 valid
-	 memory(3)(199 downto 180) <= "11111011111111111100"; -- Write out some data to right
-	 memory(3)(179 downto 160) <= "11111011111111111100"; -- Write out some data to left
-	 
-    memory(4)(255 downto 240) <= "1001100000000000"; -- slot 3 and 4 valid
-	 memory(4)(199 downto 180) <= "11111111111110111100"; -- Write out some data to right
-	 memory(4)(179 downto 160) <= "11111111111110111100"; -- Write out some data to left
+-- Write to PCM
+    memory(6) <= "11100000000000000000";
+    memory(7) <= "00001100000000000000";                  
+    memory(8) <= "00100001000000000000";
+    
+-- output data 1
+    memory(9) <= "10011000000000000000";
+    memory(10)<= "11111011111111111100";	         
+    memory(11)<= "11111011111111111100";
 
-    for i in 5 to numAdr-1 loop -- For testing the emitter
+--output data 2
+    memory(12)<= "10011000000000000000";
+    memory(13)<= "11111111111110111100";	         
+    memory(14)<= "11111111111110111100";
+
+
+    for i in 15 to numAdr-1 loop -- For testing the emitter
         memory(i) <= std_logic_vector(to_unsigned(0,memSize));
     end loop; 
 	 

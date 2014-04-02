@@ -23,7 +23,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 entity emitter is -- Emitter sends out on falling edge, everything must work on rising edge
 port(
   dataIn: in std_logic_vector(19 downto 0);
-  adr: out integer;
+  adr: out natural;
   sync,lineOut: out std_logic;
   clk,rst: in std_logic -- Clock is the 12.88 MHz
 );
@@ -35,7 +35,7 @@ signal stdCnt: std_logic_vector(4 downto 0);
 
 component emitter_cu is
 port(
-	dataIn: in std_logic_vector(0 to 15);
+	dataIn: in std_logic_vector(15 downto 0);
 	sync,AdrInc,Waste: out std_logic;
 	stdCnt: out std_logic_vector(4 downto 0);
 	clk,reset: in std_logic
@@ -53,21 +53,21 @@ end component;
 
 begin
 
-cu: emitter_cu port map(dataIn(15 downto 0),sync,AdrInc,Waste,stdCnt,clk,rst);
+cu: emitter_cu port map(dataIn(19 downto 4),sync,AdrInc,Waste,stdCnt,clk,rst);
 data: emitter_datapath port map(dataIn,waste,stdCnt,lineOut);
 
 emitterAddressRegister: process(clk,rst,AdrInc) 
-variable address: integer :=0;
+variable address: natural :=0;
 begin
 
-if(rising_edge(clk)) then
-  if(rst= '1') then
+if(rst= '1') then
     address := 0;
-  elsif (AdrInc = '1') then
-    if(address < 4) then -- Testing purposes only
+elsif(rising_edge(clk)) then
+  if (AdrInc = '1') then
+    if(address < 14) then -- Testing purposes only
       address := address +1;
-    elsif(address = 4) then -- Alternating 
-	   address :=3;
+    elsif(address = 14) then -- Alternating 
+	   address :=9;
     end if;
   end if;
 end if;

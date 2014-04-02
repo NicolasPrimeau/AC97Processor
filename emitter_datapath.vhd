@@ -40,11 +40,12 @@ port(
 end emitter_datapath;
 Architecture structural of emitter_datapath is
 
-signal f1,f2,f3,f4,f5: std_logic_vector(0 to 3); -- 0-3,4-7,8-11,12-15,16-19, the inputs to each lower level mux4 to 1's
+signal f1,f2,f3,f4,f5: std_logic_vector(3 downto 0); -- 0-3,4-7,8-11,12-15,16-19, the inputs to each lower level mux4 to 1's
 signal whichFour: std_logic_vector(7 downto 0); -- The input to the upper level 8 to 1 multiplexer
 signal t1,t2,t3,t4,t5: std_logic_vector(0 downto 0); -- temporary output
 signal tsendBit: std_logic_vector(0 downto 0);
 signal notWaste: std_logic;
+signal reverseCnt: std_logic_vector(1 downto 0); -- Reverse count is for the output muxes
 
 component nbit_XtoY_mux is
 	generic(
@@ -67,11 +68,12 @@ f4 <= dataIn(7 downto 4);   -- Or else we'll send the lower bits of the four fir
 f5 <= dataIn(3 downto 0); 
 notWaste <= not waste;
 
-first_four_mux: nbit_XtoY_mux generic map(1,4) port map(notWaste,f1,t1,bitCnt(1 downto 0)); -- 5f----Mux4to1------|0 Mux |
-second_four_mux: nbit_XtoY_mux generic map(1,4) port map(notWaste,f2,t2,bitCnt(1 downto 0));-- 4f----Mux4to1------|1  8  |
-third_four_mux: nbit_XtoY_mux generic map(1,4) port map(notWaste,f3,t3,bitCnt(1 downto 0));--  3f----Mux4to1------|2 to  |---Output bit
-fourth_four_mux: nbit_XtoY_mux generic map(1,4) port map(notWaste,f4,t4,bitCnt(1 downto 0));-- 2f----Mux4to1------|3  1  |
-last_four_mux: nbit_XtoY_mux generic map(1,4) port map(notWaste,f5,t5,bitCnt(1 downto 0)); --  1f----Mux4to1------|4     |
+reverseCnt <= not bitCnt(1 downto 0);
+first_four_mux: nbit_XtoY_mux generic map(1,4) port map(notWaste,f1,t1,reverseCnt(1 downto 0)); -- 5f----Mux4to1------|0 Mux |
+second_four_mux: nbit_XtoY_mux generic map(1,4) port map(notWaste,f2,t2,reverseCnt(1 downto 0));-- 4f----Mux4to1------|1  8  |
+third_four_mux: nbit_XtoY_mux generic map(1,4) port map(notWaste,f3,t3,reverseCnt(1 downto 0));--  3f----Mux4to1------|2 to  |---Output bit
+fourth_four_mux: nbit_XtoY_mux generic map(1,4) port map(notWaste,f4,t4,reverseCnt(1 downto 0));-- 2f----Mux4to1------|3  1  |
+last_four_mux: nbit_XtoY_mux generic map(1,4) port map(notWaste,f5,t5,reverseCnt(1 downto 0)); --  1f----Mux4to1------|4     |
 
 whichFour(0) <= t1(0);
 whichFour(1) <= t2(0);
