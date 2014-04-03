@@ -76,7 +76,7 @@ process(reset,dataIn,addr,rd_wr,memory) begin
     memory(14)<= "11111111111110111100";
 
 
-    for i in 15 to numAdr-1 loop -- For testing the emitter
+    for i in 15 to numAdr-1 loop
         memory(i) <= std_logic_vector(to_unsigned(0,memSize));
     end loop; 
 	 

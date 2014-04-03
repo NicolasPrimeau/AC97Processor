@@ -44,6 +44,7 @@ type state is (s0,s1,s2,s3);
 signal cnt,slotChk: natural:=0;
 signal s,n_s: state:=s0;
 signal conf: std_logic_vector(15 downto 0);
+signal updateConf,resetCnt:std_logic:='0';
 
 begin
 
@@ -60,19 +61,19 @@ begin
     s <= n_s;
 
 --Configuration
-  if(s = s0) then
+  if(updateConf = '1') then
     conf <= dataIn;
   end if;
 
 --Counter
-  if(((s = s2 )and cnt < 15) or ((s=s3) and cnt <19)) then
-    cnt <= cnt +1;
-  else
+  if(resetCnt = '1') then
     cnt <= 0;
+  else
+    cnt <= cnt +1;
   end if;
 
 --Slot validity Check, necessary for address incrementation.
-  if(s=s0 or s=s1) then
+  if(s=s0 or s=s1 or s=s2) then
     slotChk <= 1;
   elsif(s = s3 and cnt = 19) then
     slotChk <= slotChk +1;
@@ -92,7 +93,8 @@ case s is
 				       AdrInc <= '0';
 			       end if;
 			       Waste <= '1';
-				 
+				     updateConf <= '1';
+				     resetCnt <= '1';
 				 --Outputs derived from s0
 				 Sync <= '0';
 				 
@@ -101,36 +103,58 @@ case s is
              --Derived outputs
              Sync <= '1';
 				     Waste <= '1';
+				     updateConf <= '0';
+				     resetCnt <= '1';
   when s2 => if(cnt = 15) then -- If cnt is 15, prepare for next Slot at next rising edge
                n_s <= s3; --Tag is the only 16 bit slot, syncing is over
 					     AdrInc <= '1';
 					     Sync <= '0';
-					   elsif(cnt = 14) then
-					     Sync <= '0';
+               resetCnt <= '1';
+             elsif(cnt = 0) then
+               updateConf <= '1';
+               resetCnt <= '0';
+               Sync <= '1';
+               AdrInc <= '0';
 					   else
+					     updateConf <= '0';
+					     resetCnt <= '0';
 					     Sync <= '1';  -- Keep Sync up
+					     AdrInc <= '0';
 			       end if;
-				 Waste <= '0';
+				     Waste <= '0';
   when s3 => 
     
+        -- Next state is s2, we can skip 0,1
         if(slotChk = 12 and cnt = 19) then -- Maximum of slot for this board, for stereo outputs
-                 n_s <= s0;
+                 n_s <= s2;
+				 end if;
+				
+				 --Sync control
+				 if(slotChk = 12 and cnt = 19) then
+				   Sync <= '1';
+				 else
+				   Sync <= '0';
 				 end if;
 				 
-				 --Derived outputs
-				 Sync <= '0';
+				 --Count control
+				 if(cnt = 19) then
+				   resetCnt <= '1';
+				 else
+				   resetCnt <= '0';
+				 end if;
 				 
-				 if(conf(15-slotChk) = '0' or slotChk > 4) then -- If the current slot is invalid, waste it
-				   Waste <= '1';
-			    else 
-				   Waste <= '0';
-			    end if;
+				 --Waste control
+         -- Waste not valid slots
+				 Waste <= not conf(15-slotChk);
 				 
-				 if(slotChk <5 and cnt = 19 and conf(15-slotChk-1) = '1' and conf(15-slotChk) = '1') then -- We never increase address when we're processing slots over the max 5
+				 -- adress control
+				 -- We never increase address when we're processing slots over the max 5
+
+				 if(slotChk <5 and cnt = 19 and conf(15-slotChk-1) = '1' and conf(15-slotChk) = '1') then 
 						 AdrInc <= '1';
          elsif(slotChk = 12 and cnt = 19) then
              AdrInc <= '1';		
-        else
+         else
              AdrInc <= '0';
 				 end if;
 								 
