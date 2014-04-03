@@ -70,14 +70,16 @@ elsif(rising_edge(clk)) then
   if (AdrInc = '1') then
     if(address < 11) then -- Testing purposes only
       address := address +1;
-    elsif(address = 11 and cnt < 61440) then -- Alternating 
+    elsif(address = 11 and cnt < 30720) then -- Alternating 
 	    address :=9;
-	  elsif(address = 11 and cnt >= 61440) then -- generate a ~200 Hz frequency
+	  elsif(address = 11 and cnt >= 30720) then -- generate a ~200 Hz frequency
 	    address := address+1;
 	    cnt := 0;
-	  elsif(address = 14 and cnt < 61440) then
+	  elsif(address < 14) then
+	    address := address +1;
+	  elsif(address = 14 and cnt < 30720) then
 	    address := 12;
-	  elsif(address = 14 and cnt >= 61440) then
+	  elsif(address = 14 and cnt >= 30720) then
 	    address := 9;
 	    cnt := 0;
     end if;

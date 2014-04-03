@@ -31,7 +31,7 @@ use IEEE.math_real.ALL;
 
 entity transmitter is
 port(
-  clk1: in std_logic; -- The faster clock, must be a multiple of 2 of clk2, which is 12.88 MHz
+  clk1: in std_logic; -- The faster clock, must be a multiple of 2 of clk2, which is 12.288 MHz
   clk2: in std_logic; -- The codec clock
   rst: in std_logic; -- hard reset trigger
   sync: out std_logic; -- syncing signal
@@ -103,7 +103,7 @@ begin
 --end process;
 
 curAdr <= eAdr; -- For now
-hardReset <= reset;
+hardReset <= not rst;
 
 mDataIn(19 downto 0) <= (others=>'0');
 emit_rcv <= '0';
@@ -111,12 +111,12 @@ emit_rcv <= '0';
 --testing
 --reset <= trst;
 
-time: process (clk2,reset) is 
+time: process (clk2,rst,resetFlag) is 
       variable cnt: natural:=0;
       begin
-   if(reset = '1') then
+   if(rst = '1') then
      resetFlag <= '1';
-   elsif(reset = '0' and resetFlag = '1') then 
+   elsif(rst = '0' and resetFlag = '1') then 
      if(rising_edge(clk2)) then
        if(cnt = 20) then
          cnt := 0;
@@ -130,7 +130,7 @@ time: process (clk2,reset) is
   end if;
 end process;
 
-rst_debounce: debounce port map(rst,clk1,reset);
+--rst_debounce: debounce port map(rst,clk1,reset);
 memory: Mem_Async generic map(20,32) port map(mDataIn,mDataOut,curAdr,emit_rcv,resetFlag);
 emitter1: emitter port map(mDataOut,eAdr,sync,lineOut,clk2,resetFlag);
 --receiver

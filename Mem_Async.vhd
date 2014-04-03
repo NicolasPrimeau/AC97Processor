@@ -53,27 +53,27 @@ process(reset,dataIn,addr,rd_wr,memory) begin
 -- write to master
     memory(0) <= "11100000000000000000";
     memory(1) <= "00000001000000000000";
-    memory(2) <= "00100001000000000000";
+    memory(2) <= "00000000000000000000"; -- highest volume, unmute
 
--- write to hp
+-- write to HP
     memory(3) <= "11100000000000000000";
     memory(4) <= "00000010000000000000"; 
-    memory(5) <= "00100001000000000000";	                               
+    memory(5) <= "00000000000000000000"; -- highest volume, unmute                               
 
--- Write to PCM
+-- Write to Mono out
     memory(6) <= "11100000000000000000";
-    memory(7) <= "00001100000000000000";                  
-    memory(8) <= "00100001000000000000";
-    
+    memory(7) <= "00000011000000000000";                  
+    memory(8) <= "00000000000000000000"; -- highest volume, unmute
+ 
 -- output data 1
     memory(9) <= "10011000000000000000";
-    memory(10)<= "11111011111111111100";	         
-    memory(11)<= "11111011111111111100";
+    memory(10)<= "10000000000011000000";         
+    memory(11)<= "10000000000011000000";
 
 --output data 2
     memory(12)<= "10011000000000000000";
-    memory(13)<= "11111111111110111100";	         
-    memory(14)<= "11111111111110111100";
+    memory(13)<= "01111111111110100000";	         
+    memory(14)<= "01111111111110100000";
 
 
     for i in 15 to numAdr-1 loop

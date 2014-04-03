@@ -40,24 +40,28 @@ port(
 end emitter_cu;
 
 architecture Behavioral of emitter_cu is
-type state is (s0,s1,s2,s3);
+type state is (s0,s1,s2);
 signal cnt,slotChk: natural:=0;
 signal s,n_s: state:=s0;
 signal conf: std_logic_vector(15 downto 0);
 signal updateConf,resetCnt:std_logic:='0';
+signal n_sync: std_logic:='0';
 
 begin
 
 stdCnt <= std_logic_vector(to_unsigned((cnt),5));
 
-process(s,n_s,clk,reset,dataIn,cnt) 
+process(s,n_s,clk,reset,dataIn,cnt,n_sync,conf,slotchk) 
 begin
 
 --State selection
-  if(reset = '1') then
+if(reset = '1') then
     s<= s0;
     cnt<= 0;
-  elsif(rising_edge(clk)) then
+    sync <= '0';
+    adrInc <= '0';
+    waste <= '1';
+elsif(rising_edge(clk)) then
     s <= n_s;
 
 --Configuration
@@ -73,67 +77,59 @@ begin
   end if;
 
 --Slot validity Check, necessary for address incrementation.
-  if(s=s0 or s=s1 or s=s2) then
+  if(s=s0 or s=s1) then
     slotChk <= 1;
-  elsif(s = s3 and cnt = 19) then
+  elsif(s = s2 and cnt = 19) then
     slotChk <= slotChk +1;
   end if;
-  
+  Sync <= n_Sync;
 end if;
 
 
-case s is
-  when s0 => if(conf(15) = '1') then  -- Valid frame
-               n_s <= s1;
-               AdrInc <= '0';
-			       elsif(conf(15) = '0') then
-				       AdrInc <= '1'; -- Not a valid frame, increment address, find a valid tag
-				       n_s <= s0;
-				     else
-				       AdrInc <= '0';
-			       end if;
-			       Waste <= '1';
-				     updateConf <= '1';
-				     resetCnt <= '1';
-				 --Outputs derived from s0
-				 Sync <= '0';
-				 
-  when s1 => n_s <= s2; --Pre frame Sync signal
+case s is	 
+  when s0 => if(cnt = 1) then
+               n_s <= s1; --Pre frame Sync signal
+               resetCnt <= '1';
+             else
+               resetCnt <= '0';
+             end if; 
              AdrInc <= '0';
              --Derived outputs
-             Sync <= '1';
+             n_sync <= '1';
 				     Waste <= '1';
-				     updateConf <= '0';
-				     resetCnt <= '1';
-  when s2 => if(cnt = 15) then -- If cnt is 15, prepare for next Slot at next rising edge
-               n_s <= s3; --Tag is the only 16 bit slot, syncing is over
+				     updateConf <= '1';
+  when s1 => 
+            if(cnt = 15) then -- If cnt is 15, prepare for next Slot at next rising edge
+               n_s <= s2; --Tag is the only 16 bit slot, syncing is over
 					     AdrInc <= '1';
-					     Sync <= '0';
                resetCnt <= '1';
              elsif(cnt = 0) then
                updateConf <= '1';
                resetCnt <= '0';
-               Sync <= '1';
                AdrInc <= '0';
 					   else
 					     updateConf <= '0';
 					     resetCnt <= '0';
-					     Sync <= '1';  -- Keep Sync up
 					     AdrInc <= '0';
 			       end if;
 				     Waste <= '0';
-  when s3 => 
+				    
+             --sync control
+            if(cnt >= 14) then
+              n_sync <= '0';
+            end if;				     
+  when s2 => 
     
         -- Next state is s2, we can skip 0,1
         if(slotChk = 12 and cnt = 19) then -- Maximum of slot for this board, for stereo outputs
-                 n_s <= s2;
+                 n_s <= s1;
 				 end if;
 				
 				 --Sync control
-				 if(slotChk = 12 and cnt = 19) then
-				   Sync <= '1';
+				 if(slotChk = 12 and cnt >= 18) then
+				     n_Sync <= '1';
 				 else
-				   Sync <= '0';
+				     n_Sync <= '0';
 				 end if;
 				 
 				 --Count control
@@ -164,4 +160,3 @@ end case;
 end process;
 
 end Behavioral;
-
