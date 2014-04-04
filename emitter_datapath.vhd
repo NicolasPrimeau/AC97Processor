@@ -61,6 +61,7 @@ component nbit_XtoY_mux is
 end component;
 
 begin
+
 f1 <= dataIn(19 downto 16); --Important! goes from little endian in memory to big endian
 f2 <= dataIn(15 downto 12); -- In memory, 19 downto 0
 f3 <= dataIn(11 downto 8);  -- In vector, 19 downto 0 -> 0 to 19

@@ -30,13 +30,14 @@ use IEEE.math_real.ALL;
 --use UNISIM.VComponents.all;
 
 entity transmitter is
+generic(numAddresses: natural:=16);
 port(
   clk1: in std_logic; -- The faster clock, must be a multiple of 2 of clk2, which is 12.88 MHz
   clk2: in std_logic; -- The codec clock
   rst: in std_logic; -- hard reset trigger
   sync: out std_logic; -- syncing signal
   lineOut: out std_logic; -- going to the codec, falling edge reading
-  lineIn: in std_logic; --coming from the codec, rising edge sent
+  --lineIn: in std_logic; --coming from the codec, rising edge sent
   hardReset: out std_logic --hard reset going to codec
 );
 end transmitter;
@@ -44,6 +45,7 @@ end transmitter;
 architecture Behavioral of transmitter is
 
 component emitter is -- Emitter sends out on falling edge, everything must work on rising edge
+generic(numAddresses: natural:=32);
 port(
   dataIn: in std_logic_vector(19 downto 0);
   adr: out natural;
@@ -77,76 +79,79 @@ end component;
 
 --Memory signals
 signal mDataIn,mDataOut: std_logic_vector(19 downto 0); -- data output of memory
-signal emit_rcv: std_logic:='0';
-signal curAdr: natural:=0; -- Current address
+signal emit_rcv: std_logic;
+signal curAdr: natural range 0 to numAddresses-1; -- Current address
 
 --Emitter signals
-signal eAdr: natural:=0; -- Emitter address
+signal eAdr: natural range 0 to numAddresses-1; -- Emitter address
 signal eSync: std_logic;
 
 --Receiver signals
-signal rAdr: natural:=0; --  Receiver address
+signal rAdr: natural range 0 to numAddresses-1; --  Receiver address
 
 --Debounce
-signal reset:std_logic:='0';
-signal resetFlag: std_logic:='0';
+signal reset:std_logic;
+signal resetFlag: std_logic;
 
 --Temp testing
-signal trst: std_logic:='0'; 
+--signal trst: std_logic:='0'; 
 
 begin
   
-rst1: process begin
-  trst <= '1';
-  wait for 100 ns;
-  trst <= '0';
-  wait;
-end process;
+--rst1: process begin
+--  trst <= '1';
+--  wait for 100 ns;
+--  trst <= '0';
+--  wait;
+--end process;
 
 curAdr <= eAdr; -- For now
-hardReset <= not reset;
+--rAdr <= 0; -- Remove later
+hardReset <= not rst;
 
 mDataIn(19 downto 0) <= (others=>'0');
 emit_rcv <= '0';
 
 --testing
-reset <= trst;
+--reset <= trst;
 
-time: process (clk2,reset,resetFlag,esync) is 
-      variable cnt: natural:=0;
+time: process (clk1,rst,resetFlag,esync) is 
+      variable cnt: natural range 0 to 400;
       begin
-   if(reset = '1') then
+   if(rst = '1') then
      resetFlag <= '1';
-   elsif(reset = '0' and resetFlag = '1') then 
-     if(rising_edge(clk2)) then
-       if(cnt = 20) then
+	  cnt := 0;
+   elsif(rst = '0' and resetFlag = '1') then 
+     if(rising_edge(clk1)) then
+       if(cnt = 300) then
          cnt := 0;
          resetFlag <= '0';
        else
          cnt := cnt +1;
+			resetFlag <= resetFlag;
        end if;
      end if;
-    elsif(resetFlag = '0') then
-        cnt := 0;
-  end if;
+   end if;
     
-  if(reset = '1') then
+  if(rst = '1') then
     sync <= '0';
-elsif(resetFlag = '1' and cnt < 15) then
+  elsif(resetFlag = '1' and cnt < 100) then
+    sync <= '0';
+  elsif(resetFlag = '1' and cnt < 250) then
     sync <= '1';
-  elsif(resetFlag= '1' and cnt < 17) then
+  elsif(resetFlag= '1' and cnt < 270) then
     sync <= '0';
-else
-   sync<= esync;
- end if;
+  else
+    sync<= esync;
+  end if;
     
     
     
 end process;
 
 --rst_debounce: debounce port map(rst,clk1,reset);
-memory: Mem_Async generic map(20,32) port map(mDataIn,mDataOut,curAdr,emit_rcv,resetFlag);
-emitter1: emitter port map(mDataOut,eAdr,esync,lineOut,clk2,resetFlag);
+memory: Mem_Async generic map(20,numAddresses) port map(mDataIn,mDataOut,curAdr,emit_rcv,resetFlag);
+emitter1: emitter generic map (numAddresses) port map(mDataOut,eAdr,esync,lineOut,clk2,resetFlag);
 --receiver
 
 --take care of allocating mandatory resources to emitter and receiver every second clock2 cycle

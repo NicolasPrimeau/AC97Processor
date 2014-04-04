@@ -21,6 +21,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
 entity emitter is -- Emitter sends out on falling edge, everything must work on rising edge
+generic(numAddresses: natural:=16);
 port(
   dataIn: in std_logic_vector(19 downto 0);
   adr: out natural;
@@ -57,32 +58,40 @@ cu: emitter_cu port map(dataIn(19 downto 4),sync,AdrInc,Waste,stdCnt,clk,rst);
 data: emitter_datapath port map(dataIn,waste,stdCnt,lineOut);
 
 emitterAddressRegister: process(clk,rst,AdrInc) 
-variable address: natural :=0;
-variable cnt: integer:=0; -- Testing, to make a wave
+variable address: natural range 0 to numAddresses-1;
+variable cnt: integer range 0 to 1000000; -- Testing, to make a wave
 begin
 
 if(rst= '1') then
-    address := 0;
+  address := 0;
+  cnt := 0;
 elsif(rising_edge(clk)) then
-
-    cnt := cnt+1;
-  
   if (AdrInc = '1') then
     if(address < 11) then -- Testing purposes only
       address := address +1;
-    elsif(address = 11 and cnt < 30720) then -- Alternating 
-	    address :=9;
-	  elsif(address = 11 and cnt >= 30720) then -- generate a ~200 Hz frequency
-	    address := address+1;
-	    cnt := 0;
-	  elsif(address < 14) then
-	    address := address +1;
-	  elsif(address = 14 and cnt < 30720) then
-	    address := 12;
-	  elsif(address = 14 and cnt >= 30720) then
-	    address := 9;
-	    cnt := 0;
+		cnt := cnt+1;
+    elsif(address = 11 and cnt < 15360) then -- Alternating 
+	   address :=9;
+		cnt := cnt+1;
+	 elsif(address = 11 and cnt >= 15360) then -- generate a ~200 Hz frequency
+	   address := address+1;
+	   cnt := 0;
+	 elsif(address < 14) then
+	   address := address +1;
+		cnt := cnt+1;
+	 elsif(address = 14 and cnt < 15360) then
+	   address := 12;
+		cnt := cnt+1;
+	 elsif(address = 14 and cnt >= 15360) then
+	   address := 9;
+	   cnt := 0;
+	 else
+	   cnt := cnt+1;
+		address := 0;
     end if;
+  else
+   cnt := cnt+1;
+   address := address;
   end if;
 end if;
   adr <= address;

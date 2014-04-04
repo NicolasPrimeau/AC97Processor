@@ -38,7 +38,7 @@ generic(memSize: integer:=8;
 port(
 	dataIn: in std_logic_vector(memSize -1 downto 0);
 	dataOut: out std_logic_vector(memSize-1 downto 0);
-	addr: in natural;
+	addr: in natural range 0 to numAdr-1;
 	rd_wr: in std_logic; -- rd low, wr high
 	reset: in std_logic
 );
@@ -67,8 +67,8 @@ process(reset,dataIn,addr,rd_wr,memory) begin
  
 -- output data 1
     memory(9) <= "10011000000000000000";
-    memory(10)<= "10000000000011000000";         
-    memory(11)<= "10000000000011000000";
+    memory(10)<= "00000000000011000000";         
+    memory(11)<= "00000000000011000000";
 
 --output data 2
     memory(12)<= "10011000000000000000";
