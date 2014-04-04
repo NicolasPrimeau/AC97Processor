@@ -52,17 +52,17 @@ process(reset,dataIn,addr,rd_wr,memory) begin
   if(reset = '1') then
 -- write to master
     memory(0) <= "11100000000000000000";
-    memory(1) <= "00000001000000000000";
+    memory(1) <= "00000010000000000000";
     memory(2) <= "00000000000000000000"; -- highest volume, unmute
 
 -- write to HP
     memory(3) <= "11100000000000000000";
-    memory(4) <= "00000010000000000000"; 
+    memory(4) <= "00000100000000000000"; 
     memory(5) <= "00000000000000000000"; -- highest volume, unmute                               
 
 -- Write to Mono out
     memory(6) <= "11100000000000000000";
-    memory(7) <= "00000011000000000000";                  
+    memory(7) <= "00000110000000000000";                  
     memory(8) <= "00000000000000000000"; -- highest volume, unmute
  
 -- output data 1

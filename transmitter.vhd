@@ -31,7 +31,7 @@ use IEEE.math_real.ALL;
 
 entity transmitter is
 port(
-  clk1: in std_logic; -- The faster clock, must be a multiple of 2 of clk2, which is 12.288 MHz
+  clk1: in std_logic; -- The faster clock, must be a multiple of 2 of clk2, which is 12.88 MHz
   clk2: in std_logic; -- The codec clock
   rst: in std_logic; -- hard reset trigger
   sync: out std_logic; -- syncing signal
@@ -82,6 +82,7 @@ signal curAdr: natural:=0; -- Current address
 
 --Emitter signals
 signal eAdr: natural:=0; -- Emitter address
+signal eSync: std_logic;
 
 --Receiver signals
 signal rAdr: natural:=0; --  Receiver address
@@ -91,32 +92,32 @@ signal reset:std_logic:='0';
 signal resetFlag: std_logic:='0';
 
 --Temp testing
---signal trst: std_logic:='0'; 
+signal trst: std_logic:='0'; 
 
 begin
   
---rst1: process begin
---  trst <= '1';
---  wait for 100 ns;
---  trst <= '0';
---  wait;
---end process;
+rst1: process begin
+  trst <= '1';
+  wait for 100 ns;
+  trst <= '0';
+  wait;
+end process;
 
 curAdr <= eAdr; -- For now
-hardReset <= not rst;
+hardReset <= not reset;
 
 mDataIn(19 downto 0) <= (others=>'0');
 emit_rcv <= '0';
 
 --testing
---reset <= trst;
+reset <= trst;
 
-time: process (clk2,rst,resetFlag) is 
+time: process (clk2,reset,resetFlag,esync) is 
       variable cnt: natural:=0;
       begin
-   if(rst = '1') then
+   if(reset = '1') then
      resetFlag <= '1';
-   elsif(rst = '0' and resetFlag = '1') then 
+   elsif(reset = '0' and resetFlag = '1') then 
      if(rising_edge(clk2)) then
        if(cnt = 20) then
          cnt := 0;
@@ -128,11 +129,24 @@ time: process (clk2,rst,resetFlag) is
     elsif(resetFlag = '0') then
         cnt := 0;
   end if;
+    
+  if(reset = '1') then
+    sync <= '0';
+elsif(resetFlag = '1' and cnt < 15) then
+    sync <= '1';
+  elsif(resetFlag= '1' and cnt < 17) then
+    sync <= '0';
+else
+   sync<= esync;
+ end if;
+    
+    
+    
 end process;
 
 --rst_debounce: debounce port map(rst,clk1,reset);
 memory: Mem_Async generic map(20,32) port map(mDataIn,mDataOut,curAdr,emit_rcv,resetFlag);
-emitter1: emitter port map(mDataOut,eAdr,sync,lineOut,clk2,resetFlag);
+emitter1: emitter port map(mDataOut,eAdr,esync,lineOut,clk2,resetFlag);
 --receiver
 
 --take care of allocating mandatory resources to emitter and receiver every second clock2 cycle
