@@ -5,5 +5,5 @@ NET "clk2" LOC = L13;
 NET "rst" LOC = E4;
 NET "sync" LOC = U17;
 NET "lineOut" LOC = N16;
-#NET "lineIn" LOC = T18;
+NET "lineIn" LOC = T18;
 NET "hardReset" LOC = T17;

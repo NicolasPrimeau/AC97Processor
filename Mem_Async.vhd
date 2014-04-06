@@ -40,7 +40,8 @@ port(
 	dataOut: out std_logic_vector(memSize-1 downto 0);
 	addr: in natural range 0 to numAdr-1;
 	rd_wr: in std_logic; -- rd low, wr high
-	reset: in std_logic
+	reset: in std_logic;
+	clk: in std_logic
 );
 end Mem_Async;
 
@@ -48,7 +49,7 @@ architecture Behavioral of Mem_Async is
 type RAM is array (0 to numAdr-1) of std_logic_vector(memSize -1 downto 0);
 signal memory: RAM;
 begin
-process(reset,dataIn,addr,rd_wr,memory) begin
+process(reset,dataIn,addr,rd_wr,memory,clk) begin
   if(reset = '1') then
 -- write to master
     memory(0) <= "11100000000000000000";
@@ -65,15 +66,20 @@ process(reset,dataIn,addr,rd_wr,memory) begin
     memory(7) <= "00000110000000000000";                  
     memory(8) <= "00000000000000000000"; -- highest volume, unmute
  
--- output data 1
-    memory(9) <= "10011000000000000000";
-    memory(10)<= "00000000000011000000";         
-    memory(11)<= "00000000000011000000";
+-- write to record gain 
+    memory(9) <= "11100000000000000000"; 
+    memory(10)<= "00011100000000000000";         
+    memory(11)<= "00001111000011110000"; --highesty gain
+ 
+-- write to input select
+    memory(12) <= "11100000000000000000"; -- select line ine
+    memory(13)<= "00011010000000000000";         
+    memory(14)<= "00000100000001000000";
 
---output data 2
-    memory(12)<= "10011000000000000000";
-    memory(13)<= "01111111111110100000";	         
-    memory(14)<= "01111111111110100000";
+-- write to line in
+    memory(15)<= "10011000000000000000";
+    memory(16)<= "00010000000000000000";	         
+    memory(17)<= "00000000000000000000";
 
 
     for i in 15 to numAdr-1 loop
@@ -81,13 +87,17 @@ process(reset,dataIn,addr,rd_wr,memory) begin
     end loop; 
 	 
 	 dataOut <= (others => '0');
-  elsif(rd_wr = '0') then
+  elsif(falling_edge(clk)) then	 
+  if(rd_wr = '0') then
     dataOut <= memory(addr);
+	 memory <= memory;
+	 
   elsif(rd_wr = '1') then
-    memory(addr) <= dataIn;
     dataOut <= (others => '0');
+    memory(addr) <= dataIn;
   else
-    dataOut <= (others=>'0');  
+    dataOut <= (others=>'0'); 
+  end if;
   end if;
 end process;
 end Behavioral;

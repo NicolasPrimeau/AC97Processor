@@ -59,39 +59,17 @@ data: emitter_datapath port map(dataIn,waste,stdCnt,lineOut);
 
 emitterAddressRegister: process(clk,rst,AdrInc) 
 variable address: natural range 0 to numAddresses-1;
-variable cnt: integer range 0 to 1000000; -- Testing, to make a wave
 begin
 
 if(rst= '1') then
   address := 0;
-  cnt := 0;
 elsif(rising_edge(clk)) then
-  if (AdrInc = '1') then
-    if(address < 11) then -- Testing purposes only
-      address := address +1;
-		cnt := cnt+1;
-    elsif(address = 11 and cnt < 15360) then -- Alternating 
-	   address :=9;
-		cnt := cnt+1;
-	 elsif(address = 11 and cnt >= 15360) then -- generate a ~200 Hz frequency
-	   address := address+1;
-	   cnt := 0;
-	 elsif(address < 14) then
-	   address := address +1;
-		cnt := cnt+1;
-	 elsif(address = 14 and cnt < 15360) then
-	   address := 12;
-		cnt := cnt+1;
-	 elsif(address = 14 and cnt >= 15360) then
-	   address := 9;
-	   cnt := 0;
-	 else
-	   cnt := cnt+1;
-		address := 0;
-    end if;
+  if (AdrInc = '1' and address<(numAddresses-1)) then
+    address := address +1;
+  elsif(adrInc = '1' and address=numAddresses-1) then
+    address:= 0;
   else
-   cnt := cnt+1;
-   address := address;
+    address := address;
   end if;
 end if;
   adr <= address;

@@ -65,13 +65,6 @@ elsif(rising_edge(clk)) then
   
   s <= n_s;
 
---Configuration
-  if(updateConf = '1') then
-    conf <= dataIn;
-  else
-    conf <= conf;
-  end if;
-
 --Counter
   if(resetCnt = '1') then
     cnt <= 0;
@@ -89,9 +82,17 @@ elsif(rising_edge(clk)) then
   end if;
   
   Sync <= n_Sync;
+elsif(falling_edge(clk)) then
+
+--Configuration
+  if(updateConf = '1') then
+    conf <= dataIn;
+  else
+    conf <= conf;
+  end if;
 else
   cnt <= cnt;
-  slotChk <= slotChk;
+  slotChk <= slotChk;  
 end if;
 
 
@@ -102,7 +103,7 @@ case s is
         resetCnt <= '1';
       else
         resetCnt <= '0';
-		  n_s <= s0;
+		    n_s <= s0;
       end if; 
       AdrInc <= '0';
 		
@@ -115,9 +116,9 @@ case s is
   when s1 => 
       if(cnt = 15) then -- If cnt is 15, prepare for next Slot at next rising edge
          n_s <= s2; --Tag is the only 16 bit slot, syncing is over
-		   AdrInc <= '1';
+		     AdrInc <= conf(15);
          resetCnt <= '1';
-			updateConf <= '0';
+			   updateConf <= '0';
       elsif(cnt = 0) then
          updateConf <= '1';
          resetCnt <= '0';
@@ -140,12 +141,11 @@ case s is
 		 
   when s2 => 
     
-       -- Next state is s2, we can skip 0,1
        if(slotChk = 12 and cnt = 19) then -- Maximum of slot for this board, for stereo outputs
          n_s <= s1;
-		 else
-		   n_s <= s2;
-		 end if;
+		   else
+		     n_s <= s2;
+		   end if;
 				
 		 --Sync control
 		 if(slotChk = 12 and cnt >= 18) then
@@ -171,9 +171,9 @@ case s is
 		 -- adress control
 		 -- We never increase address when we're processing slots over the max 5
 
-		 if(slotChk <5 and cnt = 19 and conf(15-slotChk-1) = '1' and conf(15-slotChk) = '1') then 
+		 if(cnt = 19 and conf(15-slotChk-1) = '1' and conf(15-slotChk) = '1') then 
 		   AdrInc <= '1';
-       elsif(slotChk = 12 and cnt = 19) then
+       elsif(slotChk = 12 and cnt = 19 and conf(15) = '1') then
          AdrInc <= '1';		
        else
          AdrInc <= '0';

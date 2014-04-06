@@ -30,14 +30,14 @@ use IEEE.math_real.ALL;
 --use UNISIM.VComponents.all;
 
 entity transmitter is
-generic(numAddresses: natural:=16);
+generic(numAddresses: natural:=64);
 port(
   clk1: in std_logic; -- The faster clock, must be a multiple of 2 of clk2, which is 12.88 MHz
   clk2: in std_logic; -- The codec clock
   rst: in std_logic; -- hard reset trigger
   sync: out std_logic; -- syncing signal
   lineOut: out std_logic; -- going to the codec, falling edge reading
-  --lineIn: in std_logic; --coming from the codec, rising edge sent
+  lineIn: in std_logic; --coming from the codec, rising edge sent
   hardReset: out std_logic --hard reset going to codec
 );
 end transmitter;
@@ -62,7 +62,8 @@ port(
 	dataOut: out std_logic_vector(memSize-1 downto 0);
 	addr: in natural;
 	rd_wr: in std_logic; -- rd low, wr high
-	reset: in std_logic
+	reset: in std_logic;
+	clk: in std_logic
 );
 end component;
 
@@ -75,7 +76,17 @@ port(
 );
 end component;
 
---Missing receiver
+component receiver is
+generic(numAddresses: natural:=16;startingAddress: natural:=0);
+port(
+  clk,rst: in std_logic;
+  w: out std_logic;
+  sync: in std_logic;
+  lineIn: in std_logic;
+  address: out natural;
+  dataOut: out std_logic_vector(19 downto 0)
+);
+end component;
 
 --Memory signals
 signal mDataIn,mDataOut: std_logic_vector(19 downto 0); -- data output of memory
@@ -88,13 +99,14 @@ signal eSync: std_logic;
 
 --Receiver signals
 signal rAdr: natural range 0 to numAddresses-1; --  Receiver address
+signal w: std_logic;
 
 --Debounce
 signal reset:std_logic;
 signal resetFlag: std_logic;
 
 --Temp testing
---signal trst: std_logic:='0'; 
+--signal trst: std_logic; 
 
 begin
   
@@ -105,35 +117,32 @@ begin
 --  wait;
 --end process;
 
-curAdr <= eAdr; -- For now
---rAdr <= 0; -- Remove later
-hardReset <= not rst;
+hardReset <= not reset;
 
-mDataIn(19 downto 0) <= (others=>'0');
-emit_rcv <= '0';
 
 --testing
 --reset <= trst;
+reset <= rst;
 
-time: process (clk1,rst,resetFlag,esync) is 
+time: process (clk1,reset,resetFlag,esync) is 
       variable cnt: natural range 0 to 400;
       begin
-   if(rst = '1') then
+   if(reset = '1') then
      resetFlag <= '1';
-	  cnt := 0;
-   elsif(rst = '0' and resetFlag = '1') then 
+	   cnt := 0;
+   elsif(reset = '0' and resetFlag = '1') then 
      if(rising_edge(clk1)) then
        if(cnt = 300) then
          cnt := 0;
          resetFlag <= '0';
        else
          cnt := cnt +1;
-			resetFlag <= resetFlag;
+			   resetFlag <= resetFlag;
        end if;
      end if;
    end if;
     
-  if(rst = '1') then
+  if(reset = '1') then
     sync <= '0';
   elsif(resetFlag = '1' and cnt < 100) then
     sync <= '0';
@@ -144,15 +153,63 @@ time: process (clk1,rst,resetFlag,esync) is
   else
     sync<= esync;
   end if;
-    
-    
-    
 end process;
 
 --rst_debounce: debounce port map(rst,clk1,reset);
-memory: Mem_Async generic map(20,numAddresses) port map(mDataIn,mDataOut,curAdr,emit_rcv,resetFlag);
+memory: Mem_Async generic map(20,numAddresses) port map(mDataIn,mDataOut,curAdr,emit_rcv,resetFlag,clk1);
 emitter1: emitter generic map (numAddresses) port map(mDataOut,eAdr,esync,lineOut,clk2,resetFlag);
---receiver
+receiver1: receiver generic map(numAddresses,18) port map(clk2,resetFlag,w,esync,lineIn,rAdr,mDataIn);
+
+memory_control: process(clk1,clk2,reset,w,radr,eadr) is
+  variable clk2State: std_logic:='0';
+  variable hold2:std_logic;
+  variable cnt: natural range 0 to 10;
+  begin
+  clk2State := clk2;
+  
+  if(reset = '1') then
+    curAdr <= eAdr; --receiver has control, safe
+    emit_rcv <= '0';
+    cnt:= 0;
+    hold2:= '0';
+  elsif(rising_edge(clk1)) then
+    
+    if(clk2state = '0' and cnt = 0) then
+      cnt := cnt+1;
+      curAdr <= rAdr;
+      emit_rcv <= '0';
+    elsif(clk2state = '0' and cnt = 2) then
+      cnt := cnt+1;
+      curAdr <= rAdr;
+      emit_rcv <= w;
+    elsif(clk2state = '0' and cnt = 3) then
+      cnt := cnt;
+      curAdr <= rAdr;
+      emit_rcv <= '0';
+    elsif(clk2state = '0' and cnt = 4) then
+      cnt := 0;
+      curAdr <= rAdr;
+      emit_rcv <= '0';
+    elsif(clk2state = '1' and cnt = 2) then
+      cnt := 4;
+      curAdr <= eAdr;
+      emit_rcv <= '0';
+    elsif(clk2state = '1' and cnt = 3) then
+      cnt:=0;
+      curAdr<=eAdr;
+      emit_rcv <= '0';  
+    elsif(cnt <2) then
+      cnt:= cnt+1;
+      curAdr <= curAdr;
+      emit_rcv<= emit_rcv;
+    else
+      cnt := cnt;
+      curAdr <= curAdr;
+      emit_rcv<=emit_rcv;
+    end if;
+  end if;
+end process;
+  
 
 --take care of allocating mandatory resources to emitter and receiver every second clock2 cycle
 
