@@ -109,7 +109,7 @@ case s is
 		
       --Derived outputs
 		
-      n_sync <= not reset;
+     n_sync <= not reset;
 	   Waste <= not reset;
 	   updateConf <= not reset;
 		

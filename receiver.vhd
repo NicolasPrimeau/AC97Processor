@@ -30,7 +30,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 --use UNISIM.VComponents.all;
 
 entity receiver is
-generic(numAddresses: natural:=16;startingAddress:natural:=1);
+generic(numAddresses: natural:=64;startingAddress:natural:=0);
 port(
   clk,rst: in std_logic;
   w: out std_logic;
@@ -89,7 +89,7 @@ if(rst = '1') then
 elsif(falling_edge(clk)) then
   if(incAdr = '1' and adr < (numAddresses-1)) then
     adr <= adr +1;
-  elsif(incAdr = '1' and adr = numAddresses-1) then
+  elsif(incAdr = '1' and adr = (numAddresses-1)) then
     adr <= 0;
   else
     adr <= adr;

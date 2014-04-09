@@ -81,8 +81,12 @@ process(reset,dataIn,addr,rd_wr,memory,clk) begin
     memory(16)<= "00010000000000000000";	         
     memory(17)<= "00000000000000000000";
 
+-- write to pcm
+    memory(18)<= "10011000000000000000";
+    memory(19)<= "00011000000000000000";	         
+    memory(20)<= "00000000000000000000";
 
-    for i in 15 to numAdr-1 loop
+    for i in 21 to numAdr-1 loop
         memory(i) <= std_logic_vector(to_unsigned(0,memSize));
     end loop; 
 	 

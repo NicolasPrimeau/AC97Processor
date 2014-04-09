@@ -88,6 +88,13 @@ port(
 );
 end component;
 
+--component receiver_synth is
+--port(
+--  lineOut: out std_logic;
+--  clock,rst: in std_logic
+--);
+--end component;
+
 --Memory signals
 signal mDataIn,mDataOut: std_logic_vector(19 downto 0); -- data output of memory
 signal emit_rcv: std_logic;
@@ -107,6 +114,7 @@ signal resetFlag: std_logic;
 
 --Temp testing
 --signal trst: std_logic; 
+--signal lineIn: std_logic;
 
 begin
   
@@ -155,13 +163,13 @@ time: process (clk1,reset,resetFlag,esync) is
   end if;
 end process;
 
---rst_debounce: debounce port map(rst,clk1,reset);
+--receiver_synth1: receiver_synth port map(lineIn,clk2,resetFlag);
 memory: Mem_Async generic map(20,numAddresses) port map(mDataIn,mDataOut,curAdr,emit_rcv,resetFlag,clk1);
 emitter1: emitter generic map (numAddresses) port map(mDataOut,eAdr,esync,lineOut,clk2,resetFlag);
-receiver1: receiver generic map(numAddresses,18) port map(clk2,resetFlag,w,esync,lineIn,rAdr,mDataIn);
+receiver1: receiver generic map(numAddresses,21) port map(clk2,resetFlag,w,esync,lineIn,rAdr,mDataIn);
 
 memory_control: process(clk1,clk2,reset,w,radr,eadr) is
-  variable clk2State: std_logic:='0';
+  variable clk2State: std_logic;
   variable hold2:std_logic;
   variable cnt: natural range 0 to 10;
   begin

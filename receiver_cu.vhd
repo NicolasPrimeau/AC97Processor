@@ -140,7 +140,7 @@ when s1=>
   end if;
   
   resetSlot <= '0';
-  waste <= "00000000000000001111";
+  waste <= "00000111111111111111";
 
 when s2=>
   if(cnt = 19 and slotChk = 12) then
