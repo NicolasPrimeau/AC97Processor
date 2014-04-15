@@ -36,6 +36,7 @@ entity Mem_Async is
 generic(memSize: integer:=8;
         numAdr: integer:=32);
 port(
+leds: out std_logic_vector(7 downto 0);
 	dataIn: in std_logic_vector(memSize -1 downto 0);
 	dataOut: out std_logic_vector(memSize-1 downto 0);
 	addr: in natural range 0 to numAdr-1;
@@ -48,6 +49,7 @@ end Mem_Async;
 architecture Behavioral of Mem_Async is
 type RAM is array (0 to numAdr-1) of std_logic_vector(memSize -1 downto 0);
 signal memory: RAM;
+signal temp: std_logic_vector(memSize-1 downto 0);
 begin
 process(reset,dataIn,addr,rd_wr,memory,clk) begin
   if(reset = '1') then
@@ -61,32 +63,47 @@ process(reset,dataIn,addr,rd_wr,memory,clk) begin
     memory(4) <= "00000100000000000000"; 
     memory(5) <= "00000000000000000000"; -- highest volume, unmute                               
 
+-- write to lineIn
+--    memory(6) <= "11100000000000000000";
+--    memory(7) <= "00010000000000000000"; 
+--    memory(8) <= "00000000100000001000"; -- highest volume, unmute                               
+
+--write to PCM
+    memory(6)<= "10011000000000000000";
+    memory(7)<= "00011000000000000000";	         
+    memory(8)<= "00000000100000001000";
+
 -- Write to Mono out
-    memory(6) <= "11100000000000000000";
-    memory(7) <= "00000110000000000000";                  
-    memory(8) <= "00000000000000000000"; -- highest volume, unmute
+    memory(9) <= "11100000000000000000";
+    memory(10) <= "00000110000000000000";                  
+    memory(11) <= "00000000000000000000"; -- highest volume, unmute
  
 -- write to record gain 
-    memory(9) <= "11100000000000000000"; 
-    memory(10)<= "00011100000000000000";         
-    memory(11)<= "00001111000011110000"; --highesty gain
+    memory(12) <= "11100000000000000000"; 
+    memory(13)<= "00011100000000000000";         
+    memory(14)<= "00001111000011110000"; --highesty gain
  
--- write to input select
-    memory(12) <= "11100000000000000000"; -- select line ine
-    memory(13)<= "00011010000000000000";         
-    memory(14)<= "00000100000001000000";
-
--- write to line in
-    memory(15)<= "10011000000000000000";
-    memory(16)<= "00010000000000000000";	         
+-- write to record select
+    memory(15) <= "11100000000000000000"; -- select microphone
+    memory(16)<= "00011010000000000000";         
     memory(17)<= "00000000000000000000";
 
--- write to pcm
+-- write to mic
     memory(18)<= "10011000000000000000";
-    memory(19)<= "00011000000000000000";	         
-    memory(20)<= "00000000000000000000";
+    memory(19)<= "00001110000000000000";	         
+    memory(20)<= "00010000000001001000";
 
-    for i in 21 to numAdr-1 loop
+--set beep volume?
+    memory(21)<= "10011000000000000000";
+    memory(22)<= "00001010000000000000";	         
+    memory(23)<= "00000000000000000000";
+
+--write to PCM out bypass mix 1
+    memory(24)<= "10011000000000000000";
+    memory(25)<= "00100100000000000000";	         
+    memory(26)<= "00001000000000000000";
+
+    for i in 27 to numAdr-1 loop
         memory(i) <= std_logic_vector(to_unsigned(0,memSize));
     end loop; 
 	 
@@ -104,5 +121,8 @@ process(reset,dataIn,addr,rd_wr,memory,clk) begin
   end if;
   end if;
 end process;
+
+temp <=memory(9);
+leds <= temp (19 downto 12);
 end Behavioral;
 

@@ -103,13 +103,12 @@ case s is
         resetCnt <= '1';
       else
         resetCnt <= '0';
-		    n_s <= s0;
+		  n_s <= s0;
       end if; 
       AdrInc <= '0';
 		
       --Derived outputs
-		
-     n_sync <= not reset;
+      n_sync <= not reset;
 	   Waste <= not reset;
 	   updateConf <= not reset;
 		
@@ -131,7 +130,6 @@ case s is
 			n_s <= s1;
 		 end if;
 		 Waste <= '0';
-				    
        --sync control
        if(cnt >= 14) then
          n_sync <= '0';
@@ -142,7 +140,7 @@ case s is
   when s2 => 
     
        if(slotChk = 12 and cnt = 19) then -- Maximum of slot for this board, for stereo outputs
-         n_s <= s1;
+           n_s <= s1;
 		   else
 		     n_s <= s2;
 		   end if;
@@ -153,7 +151,8 @@ case s is
 	    else
 		   n_Sync <= '0';
 		 end if;
-				
+
+       		
 
        --Don't update conf
        updateConf <= '0';		 
@@ -167,7 +166,7 @@ case s is
 		 --Waste control
        -- Waste not valid slots
 		 Waste <= not conf(15-slotChk);
-				 
+		 
 		 -- adress control
 		 -- We never increase address when we're processing slots over the max 5
 

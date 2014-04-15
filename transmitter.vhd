@@ -36,6 +36,7 @@ port(
   clk2: in std_logic; -- The codec clock
   rst: in std_logic; -- hard reset trigger
   sync: out std_logic; -- syncing signal
+  leds: out std_logic_vector(7 downto 0);
   lineOut: out std_logic; -- going to the codec, falling edge reading
   lineIn: in std_logic; --coming from the codec, rising edge sent
   hardReset: out std_logic --hard reset going to codec
@@ -58,21 +59,13 @@ component Mem_Async is -- Single memory buffer between emitter and receiver, add
 generic(memSize: integer:=8;
         numAdr: integer:=32);
 port(
+leds: out std_logic_vector(7 downto 0);
 	dataIn: in std_logic_vector(memSize -1 downto 0);
 	dataOut: out std_logic_vector(memSize-1 downto 0);
 	addr: in natural;
 	rd_wr: in std_logic; -- rd low, wr high
 	reset: in std_logic;
 	clk: in std_logic
-);
-end component;
-
-component debounce is
-generic(timeOut: integer:=2000000);
-port(
-	input: in std_logic;
-	clk: in std_logic;
-	output: out std_logic
 );
 end component;
 
@@ -114,7 +107,7 @@ signal resetFlag: std_logic;
 
 --Temp testing
 --signal trst: std_logic; 
---signal lineIn: std_logic;
+signal tleds: std_logic_vector(7 downto 0);
 
 begin
   
@@ -131,6 +124,8 @@ hardReset <= not reset;
 --testing
 --reset <= trst;
 reset <= rst;
+leds (0) <= lineIn;
+leds(7 downto 1) <= tleds(7 downto 1);
 
 time: process (clk1,reset,resetFlag,esync) is 
       variable cnt: natural range 0 to 400;
@@ -164,9 +159,9 @@ time: process (clk1,reset,resetFlag,esync) is
 end process;
 
 --receiver_synth1: receiver_synth port map(lineIn,clk2,resetFlag);
-memory: Mem_Async generic map(20,numAddresses) port map(mDataIn,mDataOut,curAdr,emit_rcv,resetFlag,clk1);
+memory: Mem_Async generic map(20,numAddresses) port map(tleds,mDataIn,mDataOut,curAdr,emit_rcv,resetFlag,clk1);
 emitter1: emitter generic map (numAddresses) port map(mDataOut,eAdr,esync,lineOut,clk2,resetFlag);
-receiver1: receiver generic map(numAddresses,21) port map(clk2,resetFlag,w,esync,lineIn,rAdr,mDataIn);
+receiver1: receiver generic map(numAddresses,27) port map(clk2,resetFlag,w,esync,lineIn,rAdr,mDataIn);
 
 memory_control: process(clk1,clk2,reset,w,radr,eadr) is
   variable clk2State: std_logic;
